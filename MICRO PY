@@ -1,0 +1,127 @@
+import tkinter as tk
+from tkinter import ttk
+import serial
+from serial.tools import list_ports
+import threading
+
+
+conectar = None
+
+def obtener_puertos_com():
+    puertos_com = [port.device for port in list_ports.comports()]
+    return puertos_com
+
+def mostrar_puertos_com():
+    combo_puertos['values'] = obtener_puertos_com()
+    combo_puertos.set("")
+
+def conectar_puerto(puerto):
+    try:
+        conectar = serial.Serial(puerto, baudrate=9600, stopbits=1, parity='N', bytesize=8)
+        return conectar
+    except serial.SerialException as e:
+        return None
+
+def desconectar_puerto(conectar):
+    if conectar:
+        conectar.close()
+
+
+def recibir_datos():
+    global conectar
+    while conectar:
+        try:
+            datos_recibidos = conectar.readline().decode("utf-8")
+            mostrar(datos_recibidos)
+        except serial.SerialException:
+            conectar = None
+            btn_conectar.config(text="Conectar")
+            break
+
+def conectar_o_desconectar():
+    global conectar
+    if conectar is None:
+        puerto_seleccionado = combo_puertos.get()
+        conectar = conectar_puerto(puerto_seleccionado)
+        if conectar:
+            btn_conectar.config(text="Desconectar")
+            recibir_datos_thread = threading.Thread(target=recibir_datos)
+            recibir_datos_thread.start()
+    else:
+        desconectar_puerto(conectar)
+        conectar = None
+        btn_conectar.config(text="Conectar")
+
+
+
+# Crea la ventana de la interfaz grafica
+ventana = tk.Tk(className=" Recepcion")
+ventana.geometry("380x300")
+ventana.config(bg="#405158")
+
+# Etiqueta para mostrar el titulo del proyecto
+etiqueta = tk.Label(ventana, text="Sensor", font=("Arial", 14), bg="#5C6B72", fg="white")
+etiqueta.pack(side=tk.TOP, fill="both")
+
+combo_puertos = ttk.Combobox(ventana, state='readonly')
+combo_puertos.place(x=5, y=35)
+
+# Botón para actualizar la lista de puertos COM disponibles
+btn_actualizar = tk.Button(ventana, text="Actualizar", command=mostrar_puertos_com)
+btn_actualizar.place(x=235, y=30)
+
+# Botón para conectarse al puerto COM seleccionado
+btn_conectar = tk.Button(ventana, text="Conectar", command=conectar_o_desconectar)
+btn_conectar.place(x=155, y=30)
+
+# Actualizar la lista de puertos COM disponibles al abrir la ventana
+mostrar_puertos_com()
+
+################################################################################################
+
+style = ttk.Style()
+style.theme_use('default')
+style.configure("Pbar1.Vertical.TProgressbar", troughcolor='white', background='red', thickness=20)
+style.configure("Pbar2.Vertical.TProgressbar", troughcolor='white', background='#00A4FF', thickness=60)
+
+
+def mostrar(datos_recibidos):
+    id_sen = datos_recibidos[0:5] # obtiene los caracteres del 0 al 4
+    numero = int(datos_recibidos[5:9]) # obtiene los caracteres del 5 al 8
+    if id_sen == "SEN01":
+        label_val_sen1.config(text="%d" %(numero)) # Muestra el valor en la etiqueta
+        pbar_sen1["value"] = numero        # Muestra el valor en la barra
+    if id_sen == "SEN02":
+        label_val_sen2.config(text="%d" %(numero))
+        pbar_sen2["value"] = numero
+
+
+# Etiqueta para mostrar nombre del sensor1
+label_sen1 = tk.Label(ventana, text="SEN01:", font=("Arial", 14), bg="#5C6B72", fg="white")
+label_sen1.place(x=10, y=80)
+
+# Etiqueta para mostrar nombre del sensor2
+#label_sen2 = tk.Label(ventana, text="SEN02:", font=("Arial", 14), bg="#5C6B72", fg="white")
+#label_sen2.place(x=10, y=120)
+
+# Etiqueta para mostrar el valor del sensor1
+label_val_sen1= tk.Label(ventana, text="0000", font=("Arial", 14), bg="white", fg="Black", anchor=tk.NW, width=4, height=1)
+label_val_sen1.place(x=110, y=80)
+
+# Etiqueta para mostrar el valor del sensor2
+#label_val_sen2 = tk.Label(ventana, text="0000", font=("Arial", 14), bg="white", fg="Black", anchor=tk.NW, width=4, height=1)
+#label_val_sen2.place(x=110, y=120)
+
+# Crear una barra de progreso para el sensor1
+pbar_sen1 = ttk.Progressbar(ventana, style="Pbar1.Vertical.TProgressbar", length=200, maximum=1023, orient="vertical",
+                            mode="determinate")
+pbar_sen1.place(x=220, y=80)
+
+# Crear una barra de progreso para el sensor2
+pbar_sen2 = ttk.Progressbar(ventana, style="Pbar2.Vertical.TProgressbar", length=200, maximum=1023, orient="vertical",
+                            mode="determinate")
+pbar_sen2.place(x=300, y=80)
+
+################################################################################################
+
+ventana.mainloop()
