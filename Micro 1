@@ -70,15 +70,15 @@ TRISB = 0XFF;
         humedad = (100*(5-vol)/5);
         
         lcd_gotoxy(1,1);
-        printf(lcd_putc, "H = %04.2fC ",humedad);
+        printf(lcd_putc, "H = %04.2f%% ",humedad);
         
         lcd_gotoxy(1,2);
-        printf(lcd_putc, "B: %s ", is_bomba_on ? "ON " : "OFF");
+        printf(lcd_putc, "B: %s ", is_bomba_on ? "ON_" : "OFF");
         lcd_gotoxy(7,2);
         printf(lcd_putc, "PWM: %u", pwm_duty_cycle);
-        if (vol<2) {
+        if (vol<3) {
             delay_ms(1);
-            if (vol<2) { // Confirmar que el botón sigue presionado
+            if (vol<3) { 
                 lcd_gotoxy(15,1);
                 printf(lcd_putc, "1");
                 if (true) {
@@ -88,42 +88,23 @@ TRISB = 0XFF;
                     update_pwm();
                 }
             }
-        }
-        
-        if (vol>4) {
+        } 
+        if (vol>3) {
             delay_ms(1);
-            if (vol>4) { // Confirmar que el botón sigue presionado
+            if (vol>3) { 
                 lcd_gotoxy(15,1);
                 printf(lcd_putc, "2");
                 if (true) {
                     pwm_duty_cycle = 250;
                     lcd_gotoxy(3,2);
-                     printf(lcd_putc, "ON");
+                     printf(lcd_putc, "ON_");
                     update_pwm();
                 }
             }
         }
-        
-        if (false) {
-            delay_ms(50);
-            if (false) { // Confirmar que el botón sigue presionado
-                
-                lcd_gotoxy(15,1);
-                printf(lcd_putc, "3");
-                is_bomba_on = !is_bomba_on;
-                if (is_bomba_on) {
-                    setup_ccp1(CCP_PWM);
-                } else {
-                    setup_ccp1(CCP_OFF);
-                }
-            }
-        }
-        setup_adc(ADC_CLOCK_INTERNAL);
-   while(TRUE)
-   {
+      setup_adc(ADC_CLOCK_INTERNAL);
       enviar_sensor1();
       delay_ms(50);
-   }
         
     }
 }
