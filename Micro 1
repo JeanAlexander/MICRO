@@ -1,7 +1,7 @@
 #include <18F4550.h>                    // Incluir el archivo de configuración del microcontrolador PIC18F4550
 #device adc=10                          // Configurar el ADC para una resolución de 10 bits
 #fuses XT,NOWDT,NOMCLR                  // Configurar los fusibles: Oscilador XT, Watchdog Timer desactivado, Master Clear desactivado
-#use delay(crystal=4000000)             // Usar un cristal de 4 MHz para el retardo
+#use delay(crystal=20000000)             // Usar un cristal de 4 MHz para el retardo
 #include <math.h>                       // Incluir la biblioteca matemática
 #define use_portd_lcd TRUE              // Usar el puerto D para el LCD
 #include <lcd.c>                        // Incluir la biblioteca para controlar el LCD
