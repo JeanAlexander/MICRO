@@ -1,110 +1,110 @@
-#include <18F4550.h>
-#device adc=10
-#fuses XT,NOWDT,NOMCLR
-#use delay(crystal=4000000)
-#include <math.h>
-#define use_portd_lcd TRUE
-#include <lcd.c>
+#include <18F4550.h>                    // Incluir el archivo de configuración del microcontrolador PIC18F4550
+#device adc=10                          // Configurar el ADC para una resolución de 10 bits
+#fuses XT,NOWDT,NOMCLR                  // Configurar los fusibles: Oscilador XT, Watchdog Timer desactivado, Master Clear desactivado
+#use delay(crystal=4000000)             // Usar un cristal de 4 MHz para el retardo
+#include <math.h>                       // Incluir la biblioteca matemática
+#define use_portd_lcd TRUE              // Usar el puerto D para el LCD
+#include <lcd.c>                        // Incluir la biblioteca para controlar el LCD
 
-#define BTN_INC_SPEED PIN_B0
-#define BTN_DEC_SPEED PIN_B1
-#define BTN_START_STOP PIN_B2
-#BYTE PORTB = 0XF83
-#BYTE TRISB = 0XF95
-#use rs232(baud=9600, stop=1, parity=N, xmit=PIN_C6, rcv=PIN_C7, bits=8)
-int8 pwm_duty_cycle = 0;
-int1 is_bomba_on = 0;
+#define BTN_INC_SPEED PIN_B0            // Definir el pin B0 como botón para aumentar la velocidad
+#define BTN_DEC_SPEED PIN_B1            // Definir el pin B1 como botón para disminuir la velocidad
+#define BTN_START_STOP PIN_B2           // Definir el pin B2 como botón para iniciar/detener
+#BYTE PORTB = 0XF83                     // Definir el puerto B
+#BYTE TRISB = 0XF95                     // Definir la dirección del puerto B
+#use rs232(baud=9600, stop=1, parity=N, xmit=PIN_C6, rcv=PIN_C7, bits=8)  // Configurar la comunicación serial RS232
 
-void enviar_sensor1()
-{
+int8 pwm_duty_cycle = 0;                // Inicializar la variable para el ciclo de trabajo del PWM
+int1 is_bomba_on = 0;                   // Inicializar la variable para el estado de la bomba (encendida/apagada)
+
+void enviar_sensor1() {                 // Función para enviar el valor del sensor1 por comunicación serial
    int16 sensor1;
 
-   set_adc_channel (6);//Lectura Vout del potenciometro en PIN AN6
-   delay_us(10);
-   sensor1 = read_adc();// lectura del valor
+   set_adc_channel (6);                 // Configurar el canal ADC 6 (Lectura Vout del potenciómetro en PIN AN6)
+   delay_us(10);                        // Esperar 10 microsegundos para la estabilización del ADC
+   sensor1 = read_adc();                // Leer el valor del ADC
 
-   printf("SEN01%04lu\r\n",sensor1);
-}
-void init_pwm() {
-    setup_ccp1(CCP_PWM);
-    setup_timer_2(T2_DIV_BY_16, 255, 1);
-    set_pwm1_duty(pwm_duty_cycle);
+   printf("SEN01%04lu\r\n", sensor1);   // Enviar el valor leído por comunicación serial
 }
 
-void update_pwm() {
-    set_pwm1_duty(pwm_duty_cycle);
+void init_pwm() {                       // Función para inicializar el módulo PWM
+    setup_ccp1(CCP_PWM);                // Configurar el módulo CCP1 para generar PWM
+    setup_timer_2(T2_DIV_BY_16, 255, 1);// Configurar el Timer 2 para el PWM
+    set_pwm1_duty(pwm_duty_cycle);      // Establecer el ciclo de trabajo del PWM
+}
+
+void update_pwm() {                     // Función para actualizar el ciclo de trabajo del PWM
+    set_pwm1_duty(pwm_duty_cycle);      // Establecer el nuevo ciclo de trabajo del PWM
 }
 
 void main() {
-TRISB = 0XFF;
-    float tv;
-    float vol;
-    int16 value;
-    float humedad;
+    TRISB = 0xFF;                       // Configurar todos los pines del puerto B como entradas
+    float tv;                           // Variable para almacenar la tensión del sensor
+    float vol;                          // Variable para almacenar el voltaje
+    int16 value;                        // Variable para almacenar el valor ADC
+    float humedad;                      // Variable para almacenar la humedad
+
+    TRISB = 0xFF;                       // Configurar todos los pines del puerto B como entradas
+    port_b_pullups(TRUE);               // Activar resistencias de pull-up en el puerto B
     
-    TRISB = 0xFF; // Configurar todos los pines del puerto B como entradas
-    port_b_pullups(TRUE); // Activar resistencias de pull-up en el puerto B
+    lcd_init();                         // Inicializar el LCD
+    setup_port_a(ALL_ANALOG);           // Configurar todos los pines del puerto A como entradas analógicas
+    setup_adc(ADC_CLOCK_INTERNAL);      // Configurar el ADC con reloj interno
+    set_adc_channel(6);                 // Seleccionar el canal ADC 6
+    init_pwm();                         // Inicializar el PWM
     
-    lcd_init();
-    setup_port_a(ALL_ANALOG);
-    setup_adc(ADC_CLOCK_INTERNAL);
-    set_adc_channel(6);
-    init_pwm();
+    lcd_gotoxy(1,1);                    // Establecer el cursor del LCD en la primera línea, primera columna
+    printf(lcd_putc, "Buenos dias");    // Mostrar "Buenos días" en el LCD
+    lcd_gotoxy(1,2);                    // Establecer el cursor del LCD en la segunda línea, primera columna
+    printf(lcd_putc, "GRUPO 22");       // Mostrar "GRUPO 22" en el LCD
+    delay_ms(2000);                     // Esperar 2 segundos
     
-    lcd_gotoxy(1,1);
-    printf(lcd_putc, "Buenos dias");
-    lcd_gotoxy(1,2);
-    printf(lcd_putc, "GRUPO 22");
-    delay_ms(2000);  // Delay para mostrar el mensaje de bienvenida
-    
-    lcd_gotoxy(1,1);
+    lcd_gotoxy(1,1);                    // Establecer el cursor del LCD en la primera línea, primera columna
     printf(lcd_putc, "                 "); // Borrar el mensaje de bienvenida
-    lcd_gotoxy(1,1);
+    lcd_gotoxy(1,1);                    // Establecer el cursor del LCD en la primera línea, primera columna
     
-    while(TRUE) {
-      
-        delay_us(10);
-        value = Read_ADC();
-        tv = 100 * 5.0 * value / 1023.0;
-        vol = (tv/100);
-        humedad = (100*(5-vol)/5);
+    while(TRUE) {                       // Bucle infinito
+        delay_us(10);                   // Esperar 10 microsegundos
+        value = Read_ADC();             // Leer el valor del ADC
+        tv = 100 * 5.0 * value / 1023.0; // Calcular la tensión en milivoltios
+        vol = (tv/100);                 // Convertir la tensión a voltios
+        humedad = (100*(5-vol)/5);      // Calcular la humedad
         
-        lcd_gotoxy(1,1);
-        printf(lcd_putc, "H = %04.2f%% ",humedad);
+        lcd_gotoxy(1,1);                // Establecer el cursor del LCD en la primera línea, primera columna
+        printf(lcd_putc, "H = %04.2f%% ", humedad); // Mostrar la humedad en el LCD
         
-        lcd_gotoxy(1,2);
-        printf(lcd_putc, "B: %s ", is_bomba_on ? "ON_" : "OFF");
-        lcd_gotoxy(7,2);
-        printf(lcd_putc, "PWM: %u", pwm_duty_cycle);
-        if (vol<3) {
-            delay_ms(1);
-            if (vol<3) { 
-                lcd_gotoxy(15,1);
-                printf(lcd_putc, "1");
-                if (true) {
-                    pwm_duty_cycle = 000;
-                    lcd_gotoxy(3,2);
-                     printf(lcd_putc, "OFF");
-                    update_pwm();
+        lcd_gotoxy(1,2);                // Establecer el cursor del LCD en la segunda línea, primera columna
+        printf(lcd_putc, "B: %s ", is_bomba_on ? "ON_" : "OFF"); // Mostrar el estado de la bomba
+        lcd_gotoxy(7,2);                // Establecer el cursor del LCD en la segunda línea, séptima columna
+        printf(lcd_putc, "PWM: %u", pwm_duty_cycle); // Mostrar el ciclo de trabajo del PWM
+        
+        if (vol < 3) {                  // Si el voltaje es menor que 3
+            delay_ms(1);                // Esperar 1 milisegundo
+            if (vol < 3) {              // Si el voltaje sigue siendo menor que 3
+                lcd_gotoxy(15,1);       // Establecer el cursor del LCD en la primera línea, columna 15
+                printf(lcd_putc, "1");  // Mostrar "1" en el LCD
+                if (true) {             // Siempre verdadero
+                    pwm_duty_cycle = 000; // Establecer el ciclo de trabajo del PWM a 0
+                    lcd_gotoxy(3,2);    // Establecer el cursor del LCD en la segunda línea, tercera columna
+                    printf(lcd_putc, "OFF"); // Mostrar "OFF" en el LCD
+                    update_pwm();       // Actualizar el ciclo de trabajo del PWM
                 }
             }
         } 
-        if (vol>3) {
-            delay_ms(1);
-            if (vol>3) { 
-                lcd_gotoxy(15,1);
-                printf(lcd_putc, "2");
-                if (true) {
-                    pwm_duty_cycle = 250;
-                    lcd_gotoxy(3,2);
-                     printf(lcd_putc, "ON_");
-                    update_pwm();
+        if (vol > 3) {                  // Si el voltaje es mayor que 3
+            delay_ms(1);                // Esperar 1 milisegundo
+            if (vol > 3) {              // Si el voltaje sigue siendo mayor que 3
+                lcd_gotoxy(15,1);       // Establecer el cursor del LCD en la primera línea, columna 15
+                printf(lcd_putc, "2");  // Mostrar "2" en el LCD
+                if (true) {             // Siempre verdadero
+                    pwm_duty_cycle = 250; // Establecer el ciclo de trabajo del PWM a 250
+                    lcd_gotoxy(3,2);    // Establecer el cursor del LCD en la segunda línea, tercera columna
+                    printf(lcd_putc, "ON_"); // Mostrar "ON_" en el LCD
+                    update_pwm();       // Actualizar el ciclo de trabajo del PWM
                 }
             }
         }
-      setup_adc(ADC_CLOCK_INTERNAL);
-      enviar_sensor1();
-      delay_ms(50);
-        
+        setup_adc(ADC_CLOCK_INTERNAL);  // Configurar el ADC con reloj interno
+        enviar_sensor1();               // Enviar el valor del sensor1 por comunicación serial
+        delay_ms(50);                   // Esperar 50 milisegundos
     }
 }
